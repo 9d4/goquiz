@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/94d/goquiz/auth"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 )
@@ -14,6 +15,8 @@ var V *viper.Viper
 func init() {
 	V = viper.New()
 	V.OnConfigChange(onConfigChange)
+
+	V.SetDefault("secret", auth.GenerateSecret())
 }
 
 func InitConfig() {
