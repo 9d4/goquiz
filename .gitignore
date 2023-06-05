@@ -1,2 +1,3 @@
 goquiz.yml
-goquiz*.sqlite3
+goquiz*.sqlite3*
+users.yml
