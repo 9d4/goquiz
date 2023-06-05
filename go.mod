@@ -3,14 +3,18 @@ module github.com/94d/goquiz
 go 1.19
 
 require (
+	github.com/bvinc/go-sqlite-lite v0.6.1
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gorilla/mux v1.8.0
+	github.com/mattn/go-sqlite3 v1.14.17
+	github.com/rubenv/sql-migrate v1.4.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0
 )
 
 require (
+	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net"
@@ -8,6 +9,7 @@ import (
 	"os"
 
 	"github.com/94d/goquiz/config"
+	"github.com/94d/goquiz/db"
 	"github.com/gorilla/mux"
 )
 
@@ -16,10 +18,17 @@ type server struct {
 }
 
 func Start() {
-	New().Serve()
+	db.Migrate()
+
+	err := db.Connect()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	New(db.DB()).Serve()
 }
 
-func New() *server {
+func New(db *sql.DB) *server {
 	srv := &server{
 		router: mux.NewRouter(),
 	}
