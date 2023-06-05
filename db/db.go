@@ -4,21 +4,26 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
-	DBName = "file:goquiz.sqlite3?cache=shared&mode=rwc"
-	db     *sql.DB
+	DBName      = "file:goquiz.sqlite3?cache=shared&mode=rwc"
+	db          *sql.DB
+	connectOnce sync.Once
 )
 
 func DB() *sql.DB {
 	return db
 }
 
-func Connect() error {
-	return connect(DBName)
+func Connect() (err error) {
+	connectOnce.Do(func() {
+		err = connect(DBName)
+	})
+	return
 }
 
 func connect(name string) error {

@@ -1,25 +1,24 @@
 package db
 
 import (
-	"database/sql"
 	"log"
+	"sync"
 
 	migrate "github.com/rubenv/sql-migrate"
 )
 
+var migrateOnce sync.Once
+
 func Migrate() {
-	log.Println("Auto migrating...")
-	migrations := migrate.FileMigrationSource{
-		Dir: "db/migrations",
-	}
+	migrateOnce.Do(func() {
+		log.Println("Auto migrating...")
+		migrations := migrate.FileMigrationSource{
+			Dir: "db/migrations",
+		}
 
-	db, err := sql.Open("sqlite3", DBName)
-	if err != nil {
-		throwErr(err)
-	}
-
-	_, err = migrate.Exec(db, "sqlite3", migrations, migrate.Up)
-	if err != nil {
-		throwErr(err)
-	}
+		_, err := migrate.Exec(DB(), "sqlite3", migrations, migrate.Up)
+		if err != nil {
+			throwErr(err)
+		}
+	})
 }
