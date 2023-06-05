@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/94d/goquiz/config"
+	"github.com/94d/goquiz/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -12,8 +13,7 @@ var rootCmd = &cobra.Command{
 	Short: "Simple quiz!",
 	Use:   "goquiz",
 	Run: func(cmd *cobra.Command, args []string) {
-		ch := make(chan int, 1)
-		<-ch
+		server.Start()
 	},
 }
 
