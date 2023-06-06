@@ -3,6 +3,8 @@ package query
 import (
 	"database/sql"
 	"sync"
+
+	"github.com/94d/goquiz/util"
 )
 
 type User struct {
@@ -33,12 +35,17 @@ func InsertUser(db *sql.DB, usr *User) (res sql.Result, err error) {
 		return
 	}
 
+	hashedPwd, err := util.HashPassword(usr.Password)
+	if err != nil {
+		return
+	}
+
 	tx, err := db.Begin()
 	if err != nil {
 		return
 	}
 
-	res, err = tx.Stmt(insertUserStmt).Exec(usr.Fullname, usr.Username, usr.Password)
+	res, err = tx.Stmt(insertUserStmt).Exec(usr.Fullname, usr.Username, hashedPwd)
 	if err != nil {
 		tx.Rollback()
 		return
