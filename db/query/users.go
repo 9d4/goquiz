@@ -12,23 +12,23 @@ type User struct {
 }
 
 var (
-	insertStmt *sql.Stmt
+	insertUserStmt *sql.Stmt
 
-	prepareOnce sync.Once
+	prepareUserStmtsOnce sync.Once
 )
 
-func prepareAllStatements(db *sql.DB) (err error) {
-	insertStmt, err = db.Prepare("INSERT INTO users (fullname, username, password) VALUES (?,?,?)")
+func prepareUserStmts(db *sql.DB) (err error) {
+	insertUserStmt, err = db.Prepare("INSERT INTO users (fullname, username, password) VALUES (?,?,?)")
 	if err != nil {
 		return err
 	}
-	defer insertStmt.Close()
+	defer insertUserStmt.Close()
 
 	return nil
 }
 
 func InsertUser(db *sql.DB, usr *User) (res sql.Result, err error) {
-	prepareOnce.Do(func() { err = prepareAllStatements(db) })
+	prepareUserStmtsOnce.Do(func() { err = prepareUserStmts(db) })
 	if err != nil {
 		return
 	}
@@ -38,7 +38,7 @@ func InsertUser(db *sql.DB, usr *User) (res sql.Result, err error) {
 		return
 	}
 
-	res, err = tx.Stmt(insertStmt).Exec(usr.Fullname, usr.Username, usr.Password)
+	res, err = tx.Stmt(insertUserStmt).Exec(usr.Fullname, usr.Username, usr.Password)
 	if err != nil {
 		tx.Rollback()
 		return

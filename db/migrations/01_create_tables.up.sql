@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS choices (
     body TEXT NOT NULL,
     correct BOOLEAN DEFAULT 0 NOT NULL,
     question_id INTEGER NOT NULL,
-    FOREIGN KEY (question_id) REFERENCES questions(id)
+    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+
 );
 
 CREATE TABLE IF NOT EXISTS questions (

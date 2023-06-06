@@ -1,0 +1,30 @@
+name: Ulangan Teori
+questions:
+  - body: DBMS adalah singkatan dari
+    choices:
+      - body: Data Manipulation System
+      - body: Database Manipulation System
+      - body: Data Management System
+      - body: Database Management System
+        correct: true
+  - body: Dibawah ini adalah salah satu tujuan atau manfaat penggunaan DBMS, Kecuali
+    choices:
+      - body: Akses data lebih mudah dan cepat
+      - body: Dapat menangani data-data dalam jumlah besar
+      - body: Membuat pekerjaan menjadi kompleks
+        correct: true
+      - body: Menghilangkan hasil duplikasi maupun inkonsistensi data
+  - body: Berikut ini contoh DBMS, Kecuali
+    choices:
+      - body: MySQL
+      - body: PostgreSQL
+      - body: Oracle
+      - body: Excel
+        correct: true
+  - body: Kepanjangan dari SQL adalah
+    choices:
+      - body: Structured Question Language
+      - body: Strong Question Language
+      - body: Structured Query Language
+        correct: true
+      - body: Strong Query Language

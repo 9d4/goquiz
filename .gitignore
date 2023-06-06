@@ -1,3 +1,4 @@
 goquiz.yml
 goquiz*.sqlite3*
 users.yml
+quiz.yml
