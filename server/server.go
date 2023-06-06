@@ -18,13 +18,12 @@ type server struct {
 }
 
 func Start() {
-	db.Migrate()
-
 	err := db.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	db.Migrate()
 	New(db.DB()).Serve()
 }
 
