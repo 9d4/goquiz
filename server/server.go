@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"io/fs"
 	"log"
 	"net"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/94d/goquiz/config"
 	"github.com/94d/goquiz/entity"
 	"github.com/94d/goquiz/util"
+	"github.com/94d/goquiz/web"
 	"github.com/asdine/storm"
 	"github.com/gorilla/mux"
 )
@@ -40,6 +42,12 @@ func New(db *storm.DB) *server {
 
 func (s *server) SetupRoutes() {
 	s.router.StrictSlash(true)
+
+	staticFs, err := fs.Sub(web.Assets(), "dist")
+	if err != nil {
+		log.Fatal(err)
+	}
+	s.router.NotFoundHandler = http.FileServer(http.FS(staticFs))
 
 	api := s.router.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { s.JSON(w, map[string]string{"message": "Hello World"}) })

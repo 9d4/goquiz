@@ -1,0 +1,12 @@
+@import './styles/mixin';
+@import './styles/variable';
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    color: $black;
+    background: url(./assets/geometry2.png);
+}
