@@ -28,12 +28,17 @@ func GenerateTokenRaw(claims *ClaimsData) *jwt.Token {
 }
 
 func ValidateToken(token string, keyFunc jwt.Keyfunc) (valid bool, err error) {
-	t, err := jwt.ParseWithClaims(token, jwt.MapClaims{}, keyFunc)
+	t, err := ParseToken(token, keyFunc)
 	if err != nil {
 		return
 	}
 
 	valid = t.Valid
+	return
+}
+
+func ParseToken(token string, keyFunc jwt.Keyfunc) (t *jwt.Token, err error) {
+	t, err = jwt.ParseWithClaims(token, jwt.MapClaims{}, keyFunc)
 	return
 }
 

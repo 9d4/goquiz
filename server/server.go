@@ -45,7 +45,8 @@ func (s *server) SetupRoutes() {
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { s.JSON(w, map[string]string{"message": "Hello World"}) })
 
 	auth := api.PathPrefix("/auth").Subrouter()
-	auth.HandleFunc("/login", s.handleAuthLogin)
+	auth.HandleFunc("/", s.handleAuth)
+	auth.HandleFunc("/login", s.handleAuthLogin).Methods("POST")
 }
 
 func (s *server) Serve() {
@@ -60,6 +61,24 @@ func (s *server) Serve() {
 func (s *server) JSON(w http.ResponseWriter, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(data)
+}
+
+func (s *server) handleAuth(w http.ResponseWriter, r *http.Request) {
+	token, err := r.Cookie("token")
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		log.Println(err)
+		return
+	}
+
+	t, err := auth.ParseToken(token.Value, auth.KeyFunc([]byte(config.V.GetString("secret"))))
+	if err != nil || !t.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		log.Println(err)
+		return
+	}
+
+	s.JSON(w, map[string]interface{}{"user": t.Claims})
 }
 
 func (s *server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
