@@ -14,3 +14,13 @@ func GetQuizName() (name string) {
 
 	return
 }
+
+func CountQuestions() (count int) {
+	count, _ = DB().Count(&Question{})
+	return
+}
+
+func CountUsers() (count int) {
+	count, _ = DB().Count(&User{})
+	return
+}

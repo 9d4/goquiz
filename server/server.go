@@ -61,7 +61,10 @@ func (s *server) Serve() {
 	listener, err := net.Listen("tcp", config.V.GetString("address"))
 	throwError(err)
 
-	log.Printf("Server listening on %s\n", listener.Addr().String())
+	log.Printf("Quiz          : %#v", entity.GetQuizName())
+	log.Printf("Question count: %#v", entity.CountQuestions())
+	log.Printf("User count    : %#v", entity.CountUsers())
+	log.Printf("Server listening on http://%s\n", listener.Addr().String())
 	err = http.Serve(listener, s.router)
 	throwError(err)
 }
