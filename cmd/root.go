@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/94d/goquiz/config"
-	"github.com/94d/goquiz/db"
+	"github.com/94d/goquiz/entity"
 	"github.com/94d/goquiz/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -15,9 +15,8 @@ var rootCmd = &cobra.Command{
 	Use:   "goquiz",
 	Run: func(cmd *cobra.Command, args []string) {
 		if s, _ := cmd.Flags().GetBool("seed"); s {
-			db.Connect()
-			db.Migrate()
-			db.Seed()
+			entity.Open()
+			entity.Seed()
 		}
 
 		server.Start()

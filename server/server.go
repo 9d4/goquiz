@@ -1,7 +1,6 @@
 package server
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net"
@@ -9,27 +8,29 @@ import (
 	"os"
 
 	"github.com/94d/goquiz/config"
-	"github.com/94d/goquiz/db"
+	"github.com/94d/goquiz/entity"
+	"github.com/asdine/storm"
 	"github.com/gorilla/mux"
 )
 
 type server struct {
 	router *mux.Router
+	db     *storm.DB
 }
 
 func Start() {
-	err := db.Connect()
+	err := entity.Open()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	db.Migrate()
-	New(db.DB()).Serve()
+	New(entity.DB()).Serve()
 }
 
-func New(db *sql.DB) *server {
+func New(db *storm.DB) *server {
 	srv := &server{
 		router: mux.NewRouter(),
+		db:     db,
 	}
 	srv.SetupRoutes()
 	return srv
@@ -40,6 +41,12 @@ func (s *server) SetupRoutes() {
 
 	api := s.router.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { s.JSON(w, map[string]string{"message": "Hello World"}) })
+	api.HandleFunc("/aa", func(w http.ResponseWriter, r *http.Request) {
+		var users []entity.User
+		s.db.All(&users)
+
+		s.JSON(w, users)
+	})
 }
 
 func (s *server) Serve() {
