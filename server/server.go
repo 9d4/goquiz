@@ -41,12 +41,6 @@ func (s *server) SetupRoutes() {
 
 	api := s.router.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { s.JSON(w, map[string]string{"message": "Hello World"}) })
-	api.HandleFunc("/aa", func(w http.ResponseWriter, r *http.Request) {
-		var users []entity.User
-		s.db.All(&users)
-
-		s.JSON(w, users)
-	})
 }
 
 func (s *server) Serve() {
