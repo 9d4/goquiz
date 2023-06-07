@@ -4,6 +4,7 @@ import (
 	"log"
 	"reflect"
 
+	"github.com/94d/goquiz/util"
 	"github.com/spf13/viper"
 )
 
@@ -64,6 +65,10 @@ func SeedUsers(data map[string]interface{}) {
 		}
 		password, ok := usr["password"].(string)
 		if !ok {
+			continue
+		}
+		password, err := util.HashPassword(password)
+		if err != nil {
 			continue
 		}
 
