@@ -1,12 +1,14 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"io/fs"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/94d/goquiz/auth"
 	"github.com/94d/goquiz/config"
@@ -55,6 +57,7 @@ func (s *server) SetupRoutes() {
 	auth := api.PathPrefix("/auth").Subrouter()
 	auth.HandleFunc("/", s.handleAuth)
 	auth.HandleFunc("/login", s.handleAuthLogin).Methods("POST")
+	auth.HandleFunc("/logout", s.withAuth(s.handleAuthLogout)).Methods("POST")
 }
 
 func (s *server) Serve() {
@@ -126,12 +129,45 @@ func (s *server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
 
 	cookie := &http.Cookie{
 		Name:  "token",
+		Path:  "/",
 		Value: tokenStr,
 	}
 	http.SetCookie(w, cookie)
 
 	s.JSON(w, map[string]interface{}{"user": token.Claims})
-	return
+}
+
+func (s *server) handleAuthLogout(w http.ResponseWriter, r *http.Request) {
+	cookie := &http.Cookie{
+		Name:    "token",
+		Value:   "",
+		Path:    "/",
+		Expires: time.Now().AddDate(0, 0, -1),
+	}
+
+	http.SetCookie(w, cookie)
+	s.JSON(w, map[string]string{"message": "Logout success"})
+}
+
+func (s *server) withAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token, err := r.Cookie("token")
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		t, err := auth.ParseToken(token.Value, auth.KeyFunc([]byte(config.V.GetString("secret"))))
+		if err != nil || !t.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), ctxKey("token"), t)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+	}
 }
 
 func throwError(err error) {
