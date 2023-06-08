@@ -58,6 +58,9 @@ func (s *server) SetupRoutes() {
 	auth.HandleFunc("/", s.handleAuth)
 	auth.HandleFunc("/login", s.handleAuthLogin).Methods("POST")
 	auth.HandleFunc("/logout", s.withAuth(s.handleAuthLogout)).Methods("POST")
+
+	quiz := api.PathPrefix("/quiz").Subrouter()
+	quiz.HandleFunc("/data", s.withAuth(s.handleQuizData))
 }
 
 func (s *server) Serve() {
@@ -168,6 +171,12 @@ func (s *server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 
 		next.ServeHTTP(w, r)
 	}
+}
+
+func (s *server) handleQuizData(w http.ResponseWriter, r *http.Request) {
+	s.JSON(w, map[string]interface{}{
+		"name": entity.GetQuizName(),
+	})
 }
 
 func throwError(err error) {
