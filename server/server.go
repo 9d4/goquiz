@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io/fs"
 	"log"
 	"net"
@@ -16,6 +17,7 @@ import (
 	"github.com/94d/goquiz/util"
 	"github.com/94d/goquiz/web"
 	"github.com/asdine/storm"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
 )
 
@@ -60,7 +62,9 @@ func (s *server) SetupRoutes() {
 	auth.HandleFunc("/logout", s.withAuth(s.handleAuthLogout)).Methods("POST")
 
 	quiz := api.PathPrefix("/quiz").Subrouter()
+	quiz.HandleFunc("/", s.withUser(s.handleQuiz))
 	quiz.HandleFunc("/data", s.withAuth(s.handleQuizData))
+	quiz.HandleFunc("/start", s.withUser(s.handleQuizStart)).Methods("POST")
 }
 
 func (s *server) Serve() {
@@ -173,10 +177,49 @@ func (s *server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (s *server) handleQuizData(w http.ResponseWriter, r *http.Request) {
-	s.JSON(w, map[string]interface{}{
-		"name": entity.GetQuizName(),
+func (s *server) withUser(next http.HandlerFunc) http.HandlerFunc {
+	return s.withAuth(func(w http.ResponseWriter, r *http.Request) {
+		tk, err := getAuth(r.Context())
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		claims, ok := tk.Claims.(jwt.MapClaims)
+		if !ok || claims["username"] == nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		var usr entity.User
+		if s.db.One("Username", claims["username"], &usr) != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), ctxKey("user"), usr)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
 	})
+}
+
+func getAuth(reqCtx context.Context) (*jwt.Token, error) {
+	tk, ok := reqCtx.Value(ctxKey("token")).(*jwt.Token)
+	if !ok {
+		return nil, errors.New("unable to get authorized token")
+	}
+
+	return tk, nil
+}
+
+func getUser(reqCtx context.Context) (*entity.User, error) {
+	usr, ok := reqCtx.Value(ctxKey("user")).(entity.User)
+	if !ok {
+		return nil, errors.New("unable to get authorized user")
+	}
+
+	return &usr, nil
 }
 
 func throwError(err error) {

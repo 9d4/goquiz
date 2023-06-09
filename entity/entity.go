@@ -8,13 +8,13 @@ type User struct {
 }
 
 type Question struct {
-	ID   int `storm:"id,increment"`
-	Body string
+	ID   int    `storm:"id,increment" json:"id"`
+	Body string `json:"body"`
 }
 
 type Choice struct {
-	ID         int `storm:"id,increment"`
+	ID         int `storm:"id,increment" json:"id"`
 	QuestionID int
-	Body       string
+	Body       string `json:"body"`
 	Correct    bool
 }

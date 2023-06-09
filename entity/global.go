@@ -1,7 +1,10 @@
 package entity
 
+import "github.com/asdine/storm"
+
 var (
 	globalBucketName = "global"
+	quizBucketName   = "quiz"
 	quizNameKey      = "quizName"
 )
 
@@ -23,4 +26,19 @@ func CountQuestions() (count int) {
 func CountUsers() (count int) {
 	count, _ = DB().Count(&User{})
 	return
+}
+
+var ErrNotFound = storm.ErrNotFound
+
+func QuizSet(key, data interface{}) error {
+	return DB().Set(quizBucketName, key, data)
+}
+
+func QuizGet(key, to interface{}) (err error) {
+	err = DB().Get(quizBucketName, key, to)
+	return
+}
+
+func QuizDelete(key interface{}) error {
+	return DB().Delete(quizBucketName, key)
 }
