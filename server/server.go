@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"io/fs"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/94d/goquiz/auth"
@@ -51,7 +53,33 @@ func (s *server) SetupRoutes() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	s.router.NotFoundHandler = http.FileServer(http.FS(staticFs))
+
+	s.router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		if path[0] == '/' {
+			path = strings.TrimPrefix(path, "/")
+		}
+
+		_, err := staticFs.Open(path)
+		if err == nil {
+			http.FileServer(http.FS(staticFs)).ServeHTTP(w, r)
+			return
+		}
+
+		h, err := staticFs.Open("index.html")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		html, err := ioutil.ReadAll(h)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Write(html)
+	})
 
 	api := s.router.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { s.JSON(w, map[string]string{"message": "Hello World"}) })
