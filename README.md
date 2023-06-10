@@ -18,7 +18,7 @@ go run . # run without seeder
 
 On the first run the app will automatically create the config `goquiz.yml`. Configure it if needed.
 
-### Build with these in mind:**
+### Build with these in mind:
 - Single Binary: GoQuiz is designed to be compiled into a single binary file, making it easy to distribute and run on various systems without any additional dependencies or installations.
 
 - No Third-Party Database: GoQuiz eliminates the need for external databases. All quiz questions and answers are stored directly within the application itself, ensuring a seamless and self-contained experience.
