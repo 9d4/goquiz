@@ -1,9 +1,7 @@
 package config
 
 import (
-	"fmt"
 	"log"
-	"os"
 
 	"github.com/94d/goquiz/auth"
 	"github.com/fsnotify/fsnotify"
@@ -24,7 +22,7 @@ func InitConfig() {
 	V.SetConfigName("goquiz")
 	V.AutomaticEnv()
 	err := V.ReadInConfig()
-	if err != nil {
+	for err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			log.Fatal(err)
 		}
@@ -36,8 +34,7 @@ func InitConfig() {
 			log.Fatal(errwrite)
 		}
 
-		fmt.Print("\nNow you can configure the config file then run GoQuiz again\n")
-		os.Exit(0)
+		err = V.ReadInConfig()
 	}
 
 	log.Printf("Config used %s\n", V.ConfigFileUsed())
