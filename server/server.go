@@ -67,6 +67,7 @@ func (s *server) SetupRoutes() {
 	quiz.HandleFunc("/data", s.withAuth(s.handleQuizData))
 	quiz.HandleFunc("/start", s.withUser(s.handleQuizStart)).Methods("POST")
 	quiz.HandleFunc("/finish", s.withUser(s.handleQuizFinish)).Methods("POST")
+	quiz.HandleFunc("/result", s.withUser(s.handleQuizResult))
 }
 
 func (s *server) Serve() {

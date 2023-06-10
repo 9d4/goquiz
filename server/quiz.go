@@ -318,3 +318,37 @@ func (s *server) handleQuizFinish(w http.ResponseWriter, r *http.Request) {
 
 	entity.QuizSet(usr.Username+":status", "finished")
 }
+
+func (s *server) handleQuizResult(w http.ResponseWriter, r *http.Request) {
+	usr, err := getUser(r.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var score entity.Score
+	if err := s.db.One("UserID", usr.ID, &score); err != nil {
+		if errors.Is(err, storm.ErrNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("Please finish the quiz first!"))
+			return
+		}
+
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	questionCount, _ := s.db.Count(&entity.Question{})
+
+	var correctAnswers []entity.Answer
+	if err := s.db.Select(q.And(q.Eq("UserID", usr.ID), q.Eq("Correct", true))).Find(&correctAnswers); err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	s.JSON(w, map[string]interface{}{
+		"score":         score.Value,
+		"totalQuestion": questionCount,
+		"correctAnswer": len(correctAnswers),
+	})
+}
