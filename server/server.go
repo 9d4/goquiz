@@ -62,7 +62,8 @@ func (s *server) SetupRoutes() {
 	auth.HandleFunc("/logout", s.withAuth(s.handleAuthLogout)).Methods("POST")
 
 	quiz := api.PathPrefix("/quiz").Subrouter()
-	quiz.HandleFunc("/", s.withUser(s.handleQuiz))
+	quiz.HandleFunc("", s.withUser(s.handleQuizAnswer)).Methods("POST")
+	quiz.HandleFunc("", s.withUser(s.handleQuiz))
 	quiz.HandleFunc("/data", s.withAuth(s.handleQuizData))
 	quiz.HandleFunc("/start", s.withUser(s.handleQuizStart)).Methods("POST")
 }
