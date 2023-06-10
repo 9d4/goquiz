@@ -18,3 +18,17 @@ type Choice struct {
 	Body       string `json:"body"`
 	Correct    bool
 }
+
+type Answer struct {
+	ID         int `storm:"id,increment"`
+	UserID     int `storm:"index"`
+	QuestionID int `storm:"index"`
+	ChoiceID   int `storm:"index"`
+	Correct    bool
+}
+
+type Score struct {
+	ID     int `storm:"id,increment"`
+	UserID int `storm:"index,unique"`
+	Value  float64
+}

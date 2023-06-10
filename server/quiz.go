@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/94d/goquiz/entity"
 	"github.com/94d/goquiz/util"
@@ -224,4 +225,96 @@ func (s *server) handleQuizAnswer(w http.ResponseWriter, r *http.Request) {
 	entity.QuizSet(usr.Username+":answers", answers)
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *server) handleQuizFinish(w http.ResponseWriter, r *http.Request) {
+	usr, err := getUser(r.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var status string
+	err = entity.QuizGet(fmt.Sprintf("%s:status", usr.Username), &status)
+	if err != nil && !errors.Is(err, entity.ErrNotFound) {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if status == "finished" {
+		w.WriteHeader(http.StatusGone)
+		w.Write([]byte("Quiz already finished"))
+		return
+	}
+
+	if status != "started" {
+		w.WriteHeader(http.StatusTooEarly)
+		w.Write([]byte("Quiz hasn't started yet"))
+		return
+	}
+
+	// shuffled questions for user
+	// contains id of questions
+	var userQuestionIDs []int
+	if err := entity.QuizGet(usr.Username+":questions", &userQuestionIDs); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	questionCount, err := s.db.Count(&entity.Question{})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if len(userQuestionIDs) != questionCount {
+		w.WriteHeader(http.StatusTooEarly)
+		w.Write([]byte("Please answer all questions first!"))
+		log.Println(len(userQuestionIDs))
+		log.Println(questionCount)
+		return
+	}
+
+	var userAnswerIDs []string
+	if err := entity.QuizGet(usr.Username+":answers", &userAnswerIDs); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	correct := 0
+	for i := 0; i < len(userQuestionIDs); i++ {
+		var q entity.Question
+		s.db.One("ID", userQuestionIDs[i], &q)
+
+		var choices []entity.Choice
+		s.db.Find("QuestionID", q.ID, &choices)
+
+		var selChoice entity.Choice
+		uai, err := strconv.ParseInt(userAnswerIDs[i], 10, 0)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		s.db.One("ID", uai, &selChoice)
+
+		if selChoice.Correct {
+			correct++
+		}
+
+		answer := entity.Answer{
+			UserID:     usr.ID,
+			QuestionID: q.ID,
+			ChoiceID:   selChoice.ID,
+			Correct:    selChoice.Correct,
+		}
+		s.db.Save(&answer)
+	}
+
+	score := entity.Score{
+		UserID: usr.ID,
+		Value:  float64(correct*100) / float64(questionCount),
+	}
+	s.db.Save(&score)
+
+	entity.QuizSet(usr.Username+":status", "finished")
 }
