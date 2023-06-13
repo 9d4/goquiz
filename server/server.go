@@ -82,20 +82,8 @@ func (s *server) SetupRoutes() {
 	})
 
 	s.router.HandleFunc("/adm", func(w http.ResponseWriter, r *http.Request) {
-		f, err := staticFs.Open("dashboard.html")
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		b, err := io.ReadAll(f)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
 		w.Header().Set("Content-Type", "text/html")
-		w.Write(b)
+		w.Write(web.Dashboard())
 	})
 
 	api := s.router.PathPrefix("/api").Subrouter()
