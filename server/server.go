@@ -81,6 +81,23 @@ func (s *server) SetupRoutes() {
 		w.Write(html)
 	})
 
+	s.router.HandleFunc("/adm", func(w http.ResponseWriter, r *http.Request) {
+		f, err := staticFs.Open("dashboard.html")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		b, err := ioutil.ReadAll(f)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		w.Write(b)
+	})
+
 	api := s.router.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { s.JSON(w, map[string]string{"message": "Hello World"}) })
 
