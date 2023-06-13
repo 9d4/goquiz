@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -72,7 +72,7 @@ func (s *server) SetupRoutes() {
 			return
 		}
 
-		html, err := ioutil.ReadAll(h)
+		html, err := io.ReadAll(h)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -88,7 +88,7 @@ func (s *server) SetupRoutes() {
 			return
 		}
 
-		b, err := ioutil.ReadAll(f)
+		b, err := io.ReadAll(f)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
