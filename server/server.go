@@ -100,6 +100,7 @@ func (s *server) SetupRoutes() {
 	admin := s.router.PathPrefix("/adm").Subrouter()
 	admin.Use(s.useAdmin)
 	admin.HandleFunc("", s.handleAdmin)
+	admin.HandleFunc("/raw", s.handleAdminRaw)
 }
 
 func (s *server) Serve() {

@@ -28,47 +28,51 @@
               <th>Name</th>
               <th>State</th>
               <th>Score</th>
-              <% locals.questions.forEach(question=> { %>
+              {{ range .Questions }}
                 <th>
-                  <%= question.id %>
+                  {{ .ID }}
                 </th>
-                <% }) %>
+              {{ end }}
             </tr>
           </thead>
           <tbody>
-            <% locals.students.forEach((student, i)=> { %>
+            {{ range $i, $student := .Students }}
               <tr>
                 <td>
-                  <%= ++i %>
+                  {{ $i = add $i 1 }}
                 </td>
                 <td style="white-space: nowrap;">
-                  <%= student.fullname %>
+                  {{ .Fullname }}
                 </td>
                 <td>
-                  <% switch(student.status){ case 'Working' : %>
+                  {{ if eq .Status "Working" }}
                     <span class="badge secondary">
-                      <%= student.status %>
+                      {{ .Status }}
                     </span>
-                    <% break; case 'Online' : %>
-                      <span class="badge success">
-                        <%= student.status %>
-                      </span>
-                      <% break; case 'Offline' : %>
-                        <span class="badge">
-                          <%= student.status %>
-                        </span>
-                        <% break; } %>
+                  {{ else if eq .Status "Online" }}
+                    <span class="badge success">
+                      {{ .Status }}
+                    </span>
+                  {{ else }}
+                    <span class="badge">
+                      {{ .Status }}
+                    </span>
+                  {{ end }}
                 </td>
                 <td>
-                  <%= student.score?.value %>
+                  {{ .Score.Value }}
                 </td>
-                <% student.answers.forEach(answer=> { %>
+                {{ range .Answers }}
                   <td>
-                    <%= answer.correct ? '🟢' : '🔴' %>
+                    {{ if eq .Correct true }}
+                    🟢
+                    {{ else }}
+                    🔴
+                    {{ end }}
                   </td>
-                  <% }) %>
+                {{ end }}
               </tr>
-              <% }) %>
+              {{ end }}
           </tbody>
         </table>
       </div>

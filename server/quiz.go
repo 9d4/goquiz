@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/94d/goquiz/entity"
@@ -355,6 +357,69 @@ func (s *server) handleQuizResult(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleAdmin(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.New("index")
+	tmpl, err := tmpl.Funcs(template.FuncMap{
+		"add": func(i, j int) int {
+			return i + j
+		},
+	}).Parse(string(web.Dashboard()))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+
+	data := s.resourceAdmin()
+
 	w.Header().Set("Content-Type", "text/html")
-	w.Write(web.Dashboard())
+	if err := tmpl.Execute(w, data); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+}
+
+func (s *server) handleAdminRaw(w http.ResponseWriter, r *http.Request) {
+	s.JSON(w, s.resourceAdmin())
+}
+
+func (s *server) resourceAdmin() interface{} {
+	type out struct {
+		entity.User
+		Answers []entity.Answer `json:"answers"`
+		Score   entity.Score    `json:"score"`
+		Status  string          `json:"status"`
+	}
+	var output struct {
+		Students  []out             `json:"students"`
+		Questions []entity.Question `json:"questions"`
+	}
+
+	students := []entity.User{}
+	entity.DB().All(&students)
+
+	for _, s := range students {
+		d := out{
+			User: s,
+		}
+
+		entity.DB().Find("UserID", s.ID, &d.Answers)
+		entity.DB().One("UserID", s.ID, &d.Score)
+
+		// TODO: implement ws first
+		d.Status = "Offline"
+
+		sort.SliceStable(d.Answers, func(i, j int) bool {
+			return d.Answers[i].QuestionID < d.Answers[j].QuestionID
+		})
+
+		output.Students = append(output.Students, d)
+	}
+
+	questions := []entity.Question{}
+	entity.DB().All(&questions)
+
+	output.Questions = questions
+
+	return output
 }
