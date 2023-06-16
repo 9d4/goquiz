@@ -81,11 +81,6 @@ func (s *server) SetupRoutes() {
 		w.Write(html)
 	})
 
-	s.router.HandleFunc("/adm", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		w.Write(web.Dashboard())
-	})
-
 	api := s.router.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { s.JSON(w, map[string]string{"message": "Hello World"}) })
 
@@ -101,6 +96,12 @@ func (s *server) SetupRoutes() {
 	quiz.HandleFunc("/start", s.withUser(s.handleQuizStart)).Methods("POST")
 	quiz.HandleFunc("/finish", s.withUser(s.handleQuizFinish)).Methods("POST")
 	quiz.HandleFunc("/result", s.withUser(s.handleQuizResult))
+
+	admin := s.router.PathPrefix("/adm")
+	admin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write(web.Dashboard())
+	})
 }
 
 func (s *server) Serve() {
