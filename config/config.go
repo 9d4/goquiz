@@ -15,6 +15,8 @@ func init() {
 	V.OnConfigChange(onConfigChange)
 
 	V.SetDefault("secret", auth.GenerateSecret())
+	V.SetDefault("adminUsername", "admin")
+	V.SetDefault("adminPassword", "admin===")
 }
 
 func InitConfig() {
