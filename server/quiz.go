@@ -10,6 +10,7 @@ import (
 
 	"github.com/94d/goquiz/entity"
 	"github.com/94d/goquiz/util"
+	"github.com/94d/goquiz/web"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 )
@@ -351,4 +352,9 @@ func (s *server) handleQuizResult(w http.ResponseWriter, r *http.Request) {
 		"totalQuestion": questionCount,
 		"correctAnswer": len(correctAnswers),
 	})
+}
+
+func (s *server) handleAdmin(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.Write(web.Dashboard())
 }

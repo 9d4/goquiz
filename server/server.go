@@ -97,11 +97,9 @@ func (s *server) SetupRoutes() {
 	quiz.HandleFunc("/finish", s.withUser(s.handleQuizFinish)).Methods("POST")
 	quiz.HandleFunc("/result", s.withUser(s.handleQuizResult))
 
-	admin := s.router.PathPrefix("/adm")
-	admin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		w.Write(web.Dashboard())
-	})
+	admin := s.router.PathPrefix("/adm").Subrouter()
+	admin.Use(s.useAdmin)
+	admin.HandleFunc("", s.handleAdmin)
 }
 
 func (s *server) Serve() {
@@ -238,6 +236,22 @@ func (s *server) withUser(next http.HandlerFunc) http.HandlerFunc {
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *server) useAdmin(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, _ := r.BasicAuth()
+
+		isValid := (username == config.V.GetString("adminUsername")) && (password == config.V.GetString("adminPassword"))
+		if !isValid {
+			w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		h.ServeHTTP(w, r)
+		return
 	})
 }
 
