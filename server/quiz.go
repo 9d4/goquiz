@@ -406,8 +406,18 @@ func (s *server) resourceAdmin() interface{} {
 		entity.DB().Find("UserID", s.ID, &d.Answers)
 		entity.DB().One("UserID", s.ID, &d.Score)
 
-		// TODO: implement ws first
-		d.Status = "Offline"
+		var status string
+		entity.QuizGet(s.Username+":status", &status)
+
+		if entity.Onlines.Check(s.ID) {
+			d.Status = string(entity.StatusOnline)
+
+			if status == "started" {
+				d.Status = string(entity.StatusWorking)
+			}
+		} else {
+			d.Status = string(entity.StatusOffline)
+		}
 
 		sort.SliceStable(d.Answers, func(i, j int) bool {
 			return d.Answers[i].QuestionID < d.Answers[j].QuestionID
