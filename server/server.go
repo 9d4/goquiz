@@ -253,7 +253,6 @@ func (s *server) useAdmin(h http.Handler) http.Handler {
 		}
 
 		h.ServeHTTP(w, r)
-		return
 	})
 }
 

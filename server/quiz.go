@@ -400,7 +400,8 @@ func (s *server) resourceAdmin() interface{} {
 
 	for _, s := range students {
 		d := out{
-			User: s,
+			User:    s,
+			Answers: []entity.Answer{},
 		}
 
 		entity.DB().Find("UserID", s.ID, &d.Answers)
