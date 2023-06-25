@@ -229,6 +229,10 @@ func (s *server) handleQuizAnswer(w http.ResponseWriter, r *http.Request) {
 	answers = append(answers, req.Answer)
 	entity.QuizSet(usr.Username+":answers", answers)
 
+	if len(answers) == len(questionIDs) {
+		s.handleQuizFinish(w, r)
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
