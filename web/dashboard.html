@@ -29,7 +29,7 @@
               <th>State</th>
               <th>Score</th>
               {{ range .Questions }}
-                <th>
+                <th title="{{ .Body }}" onclick="alert(`{{ .Body }}`)">
                   {{ .ID }}
                 </th>
               {{ end }}
