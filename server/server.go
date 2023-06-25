@@ -83,6 +83,12 @@ func (s *server) SetupRoutes() {
 
 	api := s.router.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { s.JSON(w, map[string]string{"message": "Hello World"}) })
+	api.Use(func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Cache-Control", "no-cache")
+			h.ServeHTTP(w, r)
+		})
+	})
 
 	auth := api.PathPrefix("/auth").Subrouter()
 	auth.HandleFunc("/", s.handleAuth)
