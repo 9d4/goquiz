@@ -346,10 +346,7 @@ func (s *server) handleQuizResult(w http.ResponseWriter, r *http.Request) {
 	questionCount, _ := s.db.Count(&entity.Question{})
 
 	var correctAnswers []entity.Answer
-	if err := s.db.Select(q.And(q.Eq("UserID", usr.ID), q.Eq("Correct", true))).Find(&correctAnswers); err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
+	s.db.Select(q.And(q.Eq("UserID", usr.ID), q.Eq("Correct", true))).Find(&correctAnswers)
 
 	s.JSON(w, map[string]interface{}{
 		"score":         score.Value,
