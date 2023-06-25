@@ -35,11 +35,13 @@ func (s *server) handleQuiz(w http.ResponseWriter, r *http.Request) {
 	if status == "finished" {
 		w.WriteHeader(http.StatusGone)
 		w.Write([]byte("Quiz already finished"))
+		return
 	}
 
 	if status != "started" {
 		w.WriteHeader(http.StatusTooEarly)
 		w.Write([]byte("Quiz hasn't started yet"))
+		return
 	}
 
 	var cursor int
