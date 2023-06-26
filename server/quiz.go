@@ -7,13 +7,11 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"sort"
 	"strconv"
 
 	"github.com/94d/goquiz/entity"
 	"github.com/94d/goquiz/util"
 	"github.com/94d/goquiz/web"
-	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 )
 
@@ -219,19 +217,26 @@ func (s *server) handleQuizAnswer(w http.ResponseWriter, r *http.Request) {
 
 	entity.QuizSet(usr.Username+":cursor", (1 + cursor))
 
-	var answers []string
-	if err := entity.QuizGet(usr.Username+":answers", &answers); err != nil {
-		if !errors.Is(err, storm.ErrNotFound) {
-			return
-		}
+	choiceID, err := strconv.ParseInt(req.Answer, 10, 0)
+	if err != nil {
+		log.Println(err)
+		return
 	}
 
-	answers = append(answers, req.Answer)
-	entity.QuizSet(usr.Username+":answers", answers)
-
-	if len(answers) == len(questionIDs) {
-		s.handleQuizFinish(w, r)
+	var userChoice entity.Choice
+	if err := s.db.One("ID", choiceID, &userChoice); err != nil {
+		w.WriteHeader(http.StatusNotAcceptable)
+		w.Write([]byte("Ilegal answer"))
+		return
 	}
+
+	ans := entity.Answer{
+		ChoiceID:   userChoice.ID,
+		Correct:    userChoice.Correct,
+		UserID:     usr.ID,
+		QuestionID: question.ID,
+	}
+	s.db.Save(&ans)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -262,68 +267,14 @@ func (s *server) handleQuizFinish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// shuffled questions for user
-	// contains id of questions
-	var userQuestionIDs []int
-	if err := entity.QuizGet(usr.Username+":questions", &userQuestionIDs); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	var cursor int
+	entity.QuizGet(usr.Username+":cursor", &cursor)
 
-	questionCount, err := s.db.Count(&entity.Question{})
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	if len(userQuestionIDs) != questionCount {
+	if cursor < entity.CountQuestions() {
 		w.WriteHeader(http.StatusTooEarly)
 		w.Write([]byte("Please answer all questions first!"))
-		log.Println(len(userQuestionIDs))
-		log.Println(questionCount)
 		return
 	}
-
-	var userAnswerIDs []string
-	if err := entity.QuizGet(usr.Username+":answers", &userAnswerIDs); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	correct := 0
-	for i := 0; i < len(userQuestionIDs); i++ {
-		var q entity.Question
-		s.db.One("ID", userQuestionIDs[i], &q)
-
-		var choices []entity.Choice
-		s.db.Find("QuestionID", q.ID, &choices)
-
-		var selChoice entity.Choice
-		uai, err := strconv.ParseInt(userAnswerIDs[i], 10, 0)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		s.db.One("ID", uai, &selChoice)
-
-		if selChoice.Correct {
-			correct++
-		}
-
-		answer := entity.Answer{
-			UserID:     usr.ID,
-			QuestionID: q.ID,
-			ChoiceID:   selChoice.ID,
-			Correct:    selChoice.Correct,
-		}
-		s.db.Save(&answer)
-	}
-
-	score := entity.Score{
-		UserID: usr.ID,
-		Value:  float64(correct*100) / float64(questionCount),
-	}
-	s.db.Save(&score)
 
 	entity.QuizSet(usr.Username+":status", "finished")
 }
@@ -335,27 +286,24 @@ func (s *server) handleQuizResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var score entity.Score
-	if err := s.db.One("UserID", usr.ID, &score); err != nil {
-		if errors.Is(err, storm.ErrNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Please finish the quiz first!"))
-			return
-		}
+	var userStatus string
+	entity.QuizGet(usr.Username+":status", &userStatus)
 
-		w.WriteHeader(http.StatusInternalServerError)
+	if userStatus != "finished" {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Please finish the quiz first!"))
 		return
 	}
 
-	questionCount, _ := s.db.Count(&entity.Question{})
+	var answers []entity.Answer
+	entity.DB().Find("UserID", usr.ID, &answers)
 
-	var correctAnswers []entity.Answer
-	s.db.Select(q.And(q.Eq("UserID", usr.ID), q.Eq("Correct", true))).Find(&correctAnswers)
+	score, correct := calculateScore(answers, entity.CountQuestions())
 
 	s.JSON(w, map[string]interface{}{
-		"score":         score.Value,
-		"totalQuestion": questionCount,
-		"correctAnswer": len(correctAnswers),
+		"score":         score,
+		"totalQuestion": entity.CountQuestions(),
+		"correctAnswer": correct,
 	})
 }
 
@@ -404,11 +352,19 @@ func (s *server) resourceAdmin() interface{} {
 	for _, s := range students {
 		d := out{
 			User:    s,
-			Answers: []entity.Answer{},
+			Answers: make([]entity.Answer, entity.CountQuestions()),
 		}
 
-		entity.DB().Find("UserID", s.ID, &d.Answers)
-		entity.DB().One("UserID", s.ID, &d.Score)
+		var answers []entity.Answer
+		entity.DB().Find("UserID", s.ID, &answers)
+
+		// score calc
+		d.Score.UserID = s.ID
+		d.Score.Value, _ = calculateScore(answers, entity.CountQuestions())
+
+		for _, a := range answers {
+			d.Answers[a.QuestionID-1] = a
+		}
 
 		var status string
 		entity.QuizGet(s.Username+":status", &status)
@@ -423,10 +379,6 @@ func (s *server) resourceAdmin() interface{} {
 			d.Status = string(entity.StatusOffline)
 		}
 
-		sort.SliceStable(d.Answers, func(i, j int) bool {
-			return d.Answers[i].QuestionID < d.Answers[j].QuestionID
-		})
-
 		output.Students = append(output.Students, d)
 	}
 
@@ -436,4 +388,15 @@ func (s *server) resourceAdmin() interface{} {
 	output.Questions = questions
 
 	return output
+}
+
+func calculateScore(answers []entity.Answer, question int) (score float64, correct int) {
+	correctAnswers := []entity.Answer{}
+	for _, a := range answers {
+		if a.Correct {
+			correctAnswers = append(correctAnswers, a)
+		}
+	}
+
+	return float64(len(correctAnswers)*100) / float64(question), len(correctAnswers)
 }

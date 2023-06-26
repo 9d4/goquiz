@@ -64,7 +64,9 @@
                 </td>
                 {{ range .Answers }}
                   <td>
-                    {{ if eq .Correct true }}
+                    {{ if eq .ID 0 }}
+                    ⚫
+                    {{ else if eq .Correct true }}
                     🟢
                     {{ else }}
                     🔴
