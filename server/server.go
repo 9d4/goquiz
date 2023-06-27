@@ -1,9 +1,11 @@
 package server
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"log"
@@ -282,7 +284,9 @@ func getUser(reqCtx context.Context) (*entity.User, error) {
 
 func throwError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		fmt.Print("Press enter to exit")
+		bufio.NewReader(os.Stdin).ReadString('\n')
 		os.Exit(1)
 	}
 }
