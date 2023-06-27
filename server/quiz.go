@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -398,5 +399,5 @@ func calculateScore(answers []entity.Answer, question int) (score float64, corre
 		}
 	}
 
-	return float64(len(correctAnswers)*100) / float64(question), len(correctAnswers)
+	return math.Round(float64(len(correctAnswers)) / float64(question) * 100), len(correctAnswers)
 }
