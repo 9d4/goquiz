@@ -30,7 +30,7 @@
               <th>Score</th>
               {{ range .Questions }}
                 <th title="{{ .Body }}" onclick="alert(`{{ .Body }}`)">
-                  {{ .ID }}
+                  {{ .Number }}
                 </th>
               {{ end }}
             </tr>

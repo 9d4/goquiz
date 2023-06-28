@@ -350,7 +350,7 @@ func (s *server) resourceAdmin() interface{} {
 	}
 
 	students := []entity.User{}
-	entity.DB().All(&students)
+	entity.DB().Select().OrderBy("Fullname").Find(&students)
 
 	for _, s := range students {
 		d := out{
@@ -386,7 +386,7 @@ func (s *server) resourceAdmin() interface{} {
 	}
 
 	questions := []entity.Question{}
-	entity.DB().All(&questions)
+	entity.DB().Select().OrderBy("Number").Find(&questions)
 
 	output.Questions = questions
 
