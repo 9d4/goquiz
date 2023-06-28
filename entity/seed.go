@@ -3,103 +3,128 @@ package entity
 import (
 	"fmt"
 	"log"
-	"reflect"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/94d/goquiz/util"
-	"github.com/spf13/viper"
 	"github.com/xuri/excelize/v2"
 )
 
 func Seed() {
+	start := time.Now()
 	log.Println("Seeding...")
-
-	reader := viper.New()
-	reader.SetConfigName("users")
-	reader.SetConfigType("yml")
-	reader.AddConfigPath(".")
-
-	err := reader.ReadInConfig()
-	if err != nil {
-		log.Println("Unable to seed users,", err)
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Println("Make sure to create users.yml; See users.example.yml for example")
-		}
-	}
-
-	SeedUsers(reader.AllSettings())
-
-	SeedQuestionExcel()
-
-	log.Println("Seeding...done")
+	SeedByExcel()
+	log.Printf("Seeding...done in %dms\n", time.Since(start).Milliseconds())
 }
 
-func SeedUsers(data map[string]interface{}) {
-	if data["users"] == nil {
-		return
-	}
-
-	ref := reflect.TypeOf(data["users"])
-	if ref.Kind() != reflect.Slice {
-		return
-	}
-
-	users := data["users"].([]interface{})
-	for _, user := range users {
-		usr, ok := user.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		if usr["username"] == nil || usr["password"] == nil {
-			continue
-		}
-		username, ok := usr["username"].(string)
-		if !ok {
-			continue
-		}
-		password, ok := usr["password"].(string)
-		if !ok {
-			continue
-		}
-		password, err := util.HashPassword(password)
-		if err != nil {
-			continue
-		}
-
-		if usr["fullname"] == nil {
-			usr["fullname"] = ""
-		}
-		fullname, ok := usr["fullname"].(string)
-		if !ok {
-			fullname = ""
-		}
-
-		user := &User{Fullname: fullname, Username: username, Password: password}
-		DB().Save(user)
-	}
-}
-
-func SeedQuestionExcel() {
+func SeedByExcel() {
 	f, err := excelize.OpenFile("quiz.xlsx")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if f.SheetCount < 1 {
-		log.Fatal("invalid: sheet less than 1")
+	if f.SheetCount < 2 {
+		log.Fatal("invalid: sheet less than 2")
 	}
 
-	sheetName := f.GetSheetName(0)
-	rows, err := f.Rows(sheetName)
+	// The sheet of questions should be in the first order
+	quizName := f.GetSheetName(0)
+	SaveQuizName(quizName)
+
+	questionRows, err := f.Rows(quizName)
 	if err != nil {
 		log.Fatal(err)
 	}
+	start := time.Now()
+	SeedQuestionExcel(questionRows)
+	log.Printf("questions done in %dms\n", time.Since(start).Milliseconds())
 
-	// save sheetName as the quiz name
-	SaveQuizName(sheetName)
+	userRows, err := f.Rows("students")
+	if err != nil {
+		log.Fatal(err)
+	}
+	start = time.Now()
+	SeedUserExcel(userRows)
+	log.Printf("students done in %dms\n", time.Since(start).Milliseconds())
+}
 
-	head := &header{}
+func SeedUserExcel(rows *excelize.Rows) {
+	head := &userHeader{}
+
+	wg := sync.WaitGroup{}
+	tx, err := DB().Begin(true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		wg.Wait()
+		tx.Commit()
+	}()
+
+	rowIndex := 0
+	for rows.Next() {
+		row, err := rows.Columns()
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// Building the header
+		if rowIndex == 0 {
+			for i, colCell := range row {
+				str := strings.ToLower(strings.TrimSpace(colCell))
+
+				switch str {
+				case "fullname":
+					head.SetFullnameIndex(i)
+				case "username":
+					head.SetUsernameIndex(i)
+				case "password":
+					head.SetPasswordIndex(i)
+				}
+			}
+
+			rowIndex++
+			continue
+		}
+
+		if !head.Complete() {
+			log.Fatal("header invalid")
+		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			user := &User{
+				Fullname: strings.TrimSpace(row[*head.FullnameIndex]),
+				Username: strings.TrimSpace(row[*head.UsernameIndex]),
+			}
+
+			if pwd, err := util.HashPassword(strings.TrimSpace(row[*head.PasswordIndex])); err == nil {
+				user.Password = pwd
+				tx.Save(user)
+			}
+		}()
+	}
+}
+
+func SeedQuestionExcel(rows *excelize.Rows) {
+	head := &questionHeader{}
+
+	wg := sync.WaitGroup{}
+	tx, err := DB().Begin(true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		wg.Wait()
+		tx.Commit()
+	}()
 
 	rowIndex := 0
 	for rows.Next() {
@@ -140,46 +165,44 @@ func SeedQuestionExcel() {
 			log.Fatal("header invalid")
 		}
 
-		tx, err := DB().Begin(true)
-		if err != nil {
-			log.Fatal(err)
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-		question := &Question{}
-		question.Number = strings.TrimSpace(row[*head.NumberIndex])
-		question.Body = strings.TrimSpace(row[*head.QuestionIndex])
-		tx.Save(question)
+			question := &Question{}
+			question.Number = strings.TrimSpace(row[*head.NumberIndex])
+			question.Body = strings.TrimSpace(row[*head.QuestionIndex])
+			tx.Save(question)
 
-		correct := strings.Split(row[*head.CorrectIndex], ",")
-		for correctStr, correctIndex := range head.GetOptions() {
-			colCell := strings.TrimSpace(row[correctIndex])
-			if colCell != "" {
-				ch := Choice{
-					QuestionID: question.ID,
-					Body:       colCell,
-				}
-
-				// Check if choice is correct
-				for _, correctCol := range correct {
-					if correctCol == correctStr {
-						ch.Correct = true
-						break
+			correct := strings.Split(row[*head.CorrectIndex], ",")
+			for correctStr, correctIndex := range head.GetOptions() {
+				colCell := strings.TrimSpace(row[correctIndex])
+				if colCell != "" {
+					ch := Choice{
+						QuestionID: question.ID,
+						Body:       colCell,
 					}
+
+					// Check if choice is correct
+					for _, correctCol := range correct {
+						if correctCol == correctStr {
+							ch.Correct = true
+							break
+						}
+					}
+
+					tx.Save(&ch)
 				}
-
-				tx.Save(&ch)
 			}
-		}
-
-		tx.Commit()
+		}()
 		rowIndex++
 	}
-	if err = rows.Close(); err != nil {
+	if err := rows.Close(); err != nil {
 		fmt.Println(err)
 	}
 }
 
-type header struct {
+type questionHeader struct {
 	NumberIndex   *int
 	QuestionIndex *int
 
@@ -191,7 +214,7 @@ type header struct {
 	CorrectIndex *int
 }
 
-func (h *header) Complete() bool {
+func (h *questionHeader) Complete() bool {
 	if h.NumberIndex == nil || h.QuestionIndex == nil || h.OptionsIndex == nil || h.CorrectIndex == nil {
 		return false
 	}
@@ -199,28 +222,28 @@ func (h *header) Complete() bool {
 	return true
 }
 
-func (h *header) SetNumberIndex(i int) {
+func (h *questionHeader) SetNumberIndex(i int) {
 	if h.NumberIndex == nil {
 		h.NumberIndex = new(int)
 	}
 	*h.NumberIndex = i
 }
 
-func (h *header) SetQuestionIndex(i int) {
+func (h *questionHeader) SetQuestionIndex(i int) {
 	if h.QuestionIndex == nil {
 		h.QuestionIndex = new(int)
 	}
 	*h.QuestionIndex = i
 }
 
-func (h *header) SetCorrectIndex(i int) {
+func (h *questionHeader) SetCorrectIndex(i int) {
 	if h.CorrectIndex == nil {
 		h.CorrectIndex = new(int)
 	}
 	*h.CorrectIndex = i
 }
 
-func (h *header) AddToOptions(value string, index int) {
+func (h *questionHeader) AddToOptions(value string, index int) {
 	if h.OptionsIndex == nil {
 		h.OptionsIndex = new(map[string]int)
 		*h.OptionsIndex = make(map[string]int)
@@ -228,7 +251,7 @@ func (h *header) AddToOptions(value string, index int) {
 	(*h.OptionsIndex)[value] = index
 }
 
-func (h *header) IsIndexInOptions(index int) bool {
+func (h *questionHeader) IsIndexInOptions(index int) bool {
 	if h.OptionsIndex == nil {
 		return false
 	}
@@ -240,6 +263,37 @@ func (h *header) IsIndexInOptions(index int) bool {
 	return false
 }
 
-func (h *header) GetOptions() map[string]int {
+func (h *questionHeader) GetOptions() map[string]int {
 	return *h.OptionsIndex
+}
+
+type userHeader struct {
+	FullnameIndex *int
+	UsernameIndex *int
+	PasswordIndex *int
+}
+
+func (uh *userHeader) Complete() bool {
+	return uh.FullnameIndex != nil && uh.UsernameIndex != nil && uh.PasswordIndex != nil
+}
+
+func (uh *userHeader) SetFullnameIndex(i int) {
+	if uh.FullnameIndex == nil {
+		uh.FullnameIndex = new(int)
+	}
+	*uh.FullnameIndex = i
+}
+
+func (uh *userHeader) SetUsernameIndex(i int) {
+	if uh.UsernameIndex == nil {
+		uh.UsernameIndex = new(int)
+	}
+	*uh.UsernameIndex = i
+}
+
+func (uh *userHeader) SetPasswordIndex(i int) {
+	if uh.PasswordIndex == nil {
+		uh.PasswordIndex = new(int)
+	}
+	*uh.PasswordIndex = i
 }
