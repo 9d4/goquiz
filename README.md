@@ -2,12 +2,7 @@
 GoQuiz is a straightforward quiz application that has been ported from [BayuDC's quiz](https://github.com/bayudc/quiz) and completely rewritten using the Go programming language. It has been developed with a focus on simplicity, efficiency, and self-contained functionality. The front-end still the same.
 
 ## Run
-The required seeders are `users.yml` and `quiz.yml` copy it from example.
-
-```bash 
-cp quiz.example.yml quiz.yml
-cp users.example.yml users.yml
-```
+The required seeder is `quiz.xlsx` copy it from example [here](https://raw.githubusercontent.com/9d4/goquiz/main/quiz.example.xlsx). Rename it to `quiz.xlsx` then run the app with `-s` flag.
 
 Build and run from Source:
 ```bash
@@ -17,6 +12,8 @@ go run . # run without seeder
 ```
 
 On the first run the app will automatically create the config `goquiz.yml`. Configure it if needed.
+
+To clean up the app, just delete the `goquiz.db` file.
 
 ### Build with these in mind:
 - Single Binary: GoQuiz is designed to be compiled into a single binary file, making it easy to distribute and run on various systems without any additional dependencies or installations.
