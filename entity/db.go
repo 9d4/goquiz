@@ -23,7 +23,7 @@ func Open() (err error) {
 }
 
 func open() error {
-	d, err := storm.Open(DBName)
+	d, err := storm.Open(DBName, storm.Batch())
 	if err != nil {
 		return err
 	}
