@@ -92,6 +92,10 @@ func SeedUserExcel(rows *excelize.Rows) {
 			log.Fatal("header invalid")
 		}
 
+		if len(row) < 1 {
+			return
+		}
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -156,6 +160,10 @@ func SeedQuestionExcel(rows *excelize.Rows) {
 
 		if !head.Complete() {
 			log.Fatal("header invalid")
+		}
+
+		if len(row) < 1 {
+			return
 		}
 
 		wg.Add(1)
