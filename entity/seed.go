@@ -117,14 +117,7 @@ func SeedQuestionExcel(rows *excelize.Rows) {
 	head := &questionHeader{}
 
 	wg := sync.WaitGroup{}
-	tx, err := DB().Begin(true)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		wg.Wait()
-		tx.Commit()
-	}()
+	defer wg.Wait()
 
 	rowIndex := 0
 	for rows.Next() {
@@ -169,6 +162,11 @@ func SeedQuestionExcel(rows *excelize.Rows) {
 		go func() {
 			defer wg.Done()
 
+			tx, err := DB().Begin(true)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			question := &Question{}
 			question.Number = strings.TrimSpace(row[*head.NumberIndex])
 			question.Body = strings.TrimSpace(row[*head.QuestionIndex])
@@ -194,6 +192,7 @@ func SeedQuestionExcel(rows *excelize.Rows) {
 					tx.Save(&ch)
 				}
 			}
+			tx.Commit()
 		}()
 		rowIndex++
 	}
