@@ -3,6 +3,7 @@ package entity
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -176,7 +177,12 @@ func SeedQuestionExcel(rows *excelize.Rows) {
 			}
 
 			question := &Question{}
-			question.Number = strings.TrimSpace(row[*head.NumberIndex])
+
+			num, err := strconv.ParseInt(strings.TrimSpace(row[*head.NumberIndex]), 10, 64)
+			if err != nil {
+				return
+			}
+			question.Number = int(num)
 			question.Body = strings.TrimSpace(row[*head.QuestionIndex])
 			tx.Save(question)
 

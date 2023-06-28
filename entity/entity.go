@@ -10,7 +10,7 @@ type User struct {
 type Question struct {
 	ID     int    `storm:"id,increment" json:"id"`
 	Body   string `json:"body"`
-	Number string `json:"number"`
+	Number int    `json:"number"`
 }
 
 type Choice struct {
