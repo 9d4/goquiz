@@ -84,6 +84,8 @@ func (s *server) handleQuiz(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	choicesOut = util.Shuffle(choicesOut)
+
 	s.JSON(w, map[string]interface{}{
 		"question": map[string]interface{}{
 			"id":      currentQuestion.ID,
