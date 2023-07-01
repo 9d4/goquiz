@@ -1,0 +1,27 @@
+# .goreleaser.yaml
+builds:
+  # You can have multiple builds defined as a yaml list
+  - # Binary name.
+    # Can be a path (e.g. `bin/app`) to wrap the binary in a directory.
+    #
+    # Default: Project directory name
+    binary: goquiz
+
+    # GOOS list to build for.
+    # For more info refer to: https://golang.org/doc/install/source#environment
+    #
+    # Default: [ 'darwin', 'linux', 'windows' ]
+    goos:
+      - darwin
+      - linux
+      - windows
+
+    # GOARCH to build for.
+    # For more info refer to: https://golang.org/doc/install/source#environment
+    #
+    # Default: [ '386', 'amd64', 'arm64' ]
+    goarch:
+      - 386
+      - amd64
+      - arm
+      - arm64
