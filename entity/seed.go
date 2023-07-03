@@ -22,11 +22,11 @@ func Seed() {
 func SeedByExcel() {
 	f, err := excelize.OpenFile("quiz.xlsx")
 	if err != nil {
-		log.Fatal(err)
+		util.Fatal(err)
 	}
 
 	if f.SheetCount < 2 {
-		log.Fatal("invalid: sheet less than 2")
+		util.Fatal("invalid: sheet less than 2")
 	}
 
 	// The sheet of questions should be in the first order
@@ -35,7 +35,7 @@ func SeedByExcel() {
 
 	questionRows, err := f.Rows(quizName)
 	if err != nil {
-		log.Fatal(err)
+		util.Fatal(err)
 	}
 	start := time.Now()
 	SeedQuestionExcel(questionRows)
@@ -43,7 +43,7 @@ func SeedByExcel() {
 
 	userRows, err := f.Rows("students")
 	if err != nil {
-		log.Fatal(err)
+		util.Fatal(err)
 	}
 	start = time.Now()
 	SeedUserExcel(userRows)
@@ -56,7 +56,7 @@ func SeedUserExcel(rows *excelize.Rows) {
 	wg := sync.WaitGroup{}
 	tx, err := DB().Begin(true)
 	if err != nil {
-		log.Fatal(err)
+		util.Fatal(err)
 	}
 	defer func() {
 		wg.Wait()
@@ -90,7 +90,7 @@ func SeedUserExcel(rows *excelize.Rows) {
 		}
 
 		if !head.Complete() {
-			log.Fatal("header invalid")
+			util.Fatal("header invalid")
 		}
 
 		if len(row) < 1 {
@@ -102,7 +102,7 @@ func SeedUserExcel(rows *excelize.Rows) {
 			defer wg.Done()
 
 			if err != nil {
-				log.Fatal(err)
+				util.Fatal(err)
 			}
 
 			user := &User{
@@ -160,7 +160,7 @@ func SeedQuestionExcel(rows *excelize.Rows) {
 		}
 
 		if !head.Complete() {
-			log.Fatal("header invalid")
+			util.Fatal("header invalid")
 		}
 
 		if len(row) < 1 {
@@ -173,7 +173,7 @@ func SeedQuestionExcel(rows *excelize.Rows) {
 
 			tx, err := DB().Begin(true)
 			if err != nil {
-				log.Fatal(err)
+				util.Fatal(err)
 			}
 
 			question := &Question{}

@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/94d/goquiz/auth"
+	"github.com/94d/goquiz/util"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 )
@@ -34,14 +35,14 @@ func InitConfig() {
 
 	for err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			log.Fatal(err)
+			util.Fatal(err)
 		}
 
 		log.Println("Generating default config...")
 		V.SetConfigType("yml")
 		errwrite := V.SafeWriteConfig()
 		if errwrite != nil {
-			log.Fatal(errwrite)
+			util.Fatal(errwrite)
 		}
 
 		err = V.ReadInConfig()

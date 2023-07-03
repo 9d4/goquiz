@@ -33,7 +33,7 @@ type server struct {
 func Start() {
 	err := entity.Open()
 	if err != nil {
-		log.Fatal(err)
+		util.Fatal(err)
 	}
 
 	New(entity.DB()).Serve()
@@ -53,7 +53,7 @@ func (s *server) SetupRoutes() {
 
 	staticFs, err := fs.Sub(web.Assets(), "dist")
 	if err != nil {
-		log.Fatal(err)
+		util.Fatal(err)
 	}
 
 	s.router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

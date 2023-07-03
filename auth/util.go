@@ -3,14 +3,15 @@ package auth
 import (
 	"crypto/rand"
 	"fmt"
-	"log"
+
+	"github.com/94d/goquiz/util"
 )
 
 func GenerateSecret() string {
 	secret := make([]byte, 16)
 	_, err := rand.Read(secret)
 	if err != nil {
-		log.Fatal(err)
+		util.Fatal(err)
 	}
 
 	return fmt.Sprintf("%x", secret)
