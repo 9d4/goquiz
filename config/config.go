@@ -8,7 +8,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-var V *viper.Viper
+var (
+	V         *viper.Viper
+	firstTime = true
+)
 
 func init() {
 	V = viper.New()
@@ -24,6 +27,11 @@ func InitConfig() {
 	V.SetConfigName("goquiz")
 	V.AutomaticEnv()
 	err := V.ReadInConfig()
+
+	if err == nil {
+		firstTime = false
+	}
+
 	for err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			log.Fatal(err)
@@ -43,4 +51,8 @@ func InitConfig() {
 }
 
 func onConfigChange(in fsnotify.Event) {
+}
+
+func FirstTime() bool {
+	return firstTime
 }

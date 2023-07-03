@@ -38,9 +38,11 @@ func init() {
 }
 
 func main() {
-	if s, _ := flags.GetBool("seed"); s {
-		entity.Open()
-		entity.Seed()
+	if s, _ := flags.GetBool("seed"); s || config.FirstTime() {
+		entity.Open(config.FirstTime())
+		if entity.AllowAutoSeed {
+			entity.Seed()
+		}
 	}
 
 	server.Start()
