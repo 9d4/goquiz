@@ -1,7 +1,10 @@
 package util
 
 import (
+	"fmt"
+	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -31,4 +34,11 @@ func Shuffle[T any](slice []T) []T {
 	}
 
 	return slice
+}
+
+func Fatal(v ...any) {
+	log.Println(v...)
+	fmt.Print("Something went wrong, read the error message. Press enter to exit")
+	fmt.Scanln()
+	os.Exit(1)
 }
