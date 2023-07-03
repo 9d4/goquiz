@@ -8,6 +8,13 @@ The required seeder is `quiz.xlsx` copy it from example [here](https://raw.githu
 - Place the quiz.xlsx in the same directory as the binary, then run
 
 **First Run** with seeder. This is first time only run.
+
+> **Note:** since version 0.2.0 the app is able to detect first time run,
+so when there is no config file in the directory the app will run the seeder,
+just put your `quiz.xlsx` in the same directory where you start the goquiz binary.
+Windows user can just double click, it's fine.
+
+
 ```shell
 # unix/linux
 $ ./goquiz --seed # to run the seeder, or "-s" for short. Run once only!
