@@ -15,14 +15,17 @@ import (
 func Seed() {
 	start := time.Now()
 	log.Println("Seeding...")
-	SeedByExcel()
+	if err := SeedByExcel(); err != nil {
+		log.Println("Seeding canceled, err:", err)
+		return
+	}
 	log.Printf("Seeding...done in %dms\n", time.Since(start).Milliseconds())
 }
 
-func SeedByExcel() {
+func SeedByExcel() error {
 	f, err := excelize.OpenFile("quiz.xlsx")
 	if err != nil {
-		util.Fatal(err)
+		return err
 	}
 
 	if f.SheetCount < 2 {
@@ -48,6 +51,7 @@ func SeedByExcel() {
 	start = time.Now()
 	SeedUserExcel(userRows)
 	log.Printf("students done in %dms\n", time.Since(start).Milliseconds())
+	return nil
 }
 
 func SeedUserExcel(rows *excelize.Rows) {
